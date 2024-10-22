@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   AlertCircle, 
   GitBranch, 
@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { useTheme } from "next-themes";
 import EditableChangelog from '@/components/EditableChangelog';
 import ReactMarkdown from 'react-markdown';
+import RepoSuggestions from './RepoSuggestions';
 
 const GramphibianLogo = () => (
   <svg width="40" height="40" viewBox="0 0 120 120" className="inline-block">
@@ -33,6 +34,13 @@ const GramphibianLogo = () => (
   </svg>
 );
 
+// Type for the form data
+interface FormData {
+  repoUrl: string;
+  startDate: string;
+  endDate: string;
+}
+
 const ChangelogGenerator = () => {
   const { theme, setTheme } = useTheme();
   const [loading, setLoading] = useState(false);
@@ -40,16 +48,46 @@ const ChangelogGenerator = () => {
   const [changelog, setChangelog] = useState('');
   const [recentRepos, setRecentRepos] = useState<string[]>([]);
   const [copied, setCopied] = useState(false);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     repoUrl: '',
     startDate: '',
     endDate: ''
   });
 
+  // Load saved data on component mount
+  useEffect(() => {
+    const savedFormData = localStorage.getItem('changelog-form-data');
+    const savedRecentRepos = localStorage.getItem('changelog-recent-repos');
+    
+    if (savedFormData) {
+      setFormData(JSON.parse(savedFormData));
+    }
+    
+    if (savedRecentRepos) {
+      setRecentRepos(JSON.parse(savedRecentRepos));
+    }
+  }, []);
+
+  // Save form data and recent repos when they change
+  useEffect(() => {
+    localStorage.setItem('changelog-form-data', JSON.stringify(formData));
+  }, [formData]);
+
+  useEffect(() => {
+    localStorage.setItem('changelog-recent-repos', JSON.stringify(recentRepos));
+  }, [recentRepos]);
+
+  // Generate a unique key for caching based on form data
+  const getCacheKey = (data: FormData) => {
+    return `changelog-${data.repoUrl}-${data.startDate}-${data.endDate}`;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
+    // Clear previous changelog when starting new request
+    setChangelog('');
 
     try {
       const response = await fetch('/api/generate-changelog', {
@@ -70,15 +108,41 @@ const ChangelogGenerator = () => {
       }
 
       const data = await response.json();
+      
+      // Cache the result
+      const cacheKey = getCacheKey(formData);
+      localStorage.setItem(cacheKey, data.changelog);
+      
       setChangelog(data.changelog);
       
       if (!recentRepos.includes(formData.repoUrl)) {
-        setRecentRepos(prev => [formData.repoUrl, ...prev].slice(0, 5));
+        const updatedRepos = [formData.repoUrl, ...recentRepos].slice(0, 5);
+        setRecentRepos(updatedRepos);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Clear all saved data
+  const handleClearData = () => {
+    setFormData({
+      repoUrl: '',
+      startDate: '',
+      endDate: ''
+    });
+    setChangelog('');
+    setRecentRepos([]);
+    localStorage.removeItem('changelog-form-data');
+    localStorage.removeItem('changelog-recent-repos');
+    // Clear all changelog caches
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('changelog-')) {
+        localStorage.removeItem(key);
+      }
     }
   };
 
@@ -99,6 +163,14 @@ const ChangelogGenerator = () => {
               <h1 className="text-2xl font-bold">Gramphibian</h1>
             </div>
             <div className="flex items-center space-x-4">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleClearData}
+                title="Clear all saved data"
+              >
+                <History className="h-5 w-5" />
+              </Button>
               <Button
                 variant="ghost"
                 size="icon"
@@ -154,24 +226,11 @@ const ChangelogGenerator = () => {
                       <GitBranch className="h-4 w-4 absolute left-2 top-3 text-muted-foreground" />
                     </div>
                     
-                    {/* Recent Repos */}
-                    {recentRepos.length > 0 && (
-                      <div className="mt-2">
-                        <label className="block text-sm text-muted-foreground mb-1">Recent:</label>
-                        <div className="flex flex-wrap gap-2">
-                          {recentRepos.map(repo => (
-                            <button
-                              key={repo}
-                              type="button"
-                              className="text-xs bg-muted hover:bg-muted/80 rounded px-2 py-1"
-                              onClick={() => setFormData(prev => ({ ...prev, repoUrl: repo }))}
-                            >
-                              {repo.split('/').slice(-2).join('/')}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
+                    {/* Repository Suggestions */}
+                    <RepoSuggestions
+                      recentRepos={recentRepos}
+                      onSelect={(repo) => setFormData(prev => ({ ...prev, repoUrl: repo }))}
+                    />
                   </div>
 
                   {/* Date Range */}
@@ -267,12 +326,12 @@ const ChangelogGenerator = () => {
           </div>
 
           {/* Output Section */}
-            <div>
+          <div>
             <EditableChangelog 
-                initialContent={changelog}
-                onSave={(newContent) => setChangelog(newContent)}
+              initialContent={changelog}
+              onSave={(newContent) => setChangelog(newContent)}
             />
-            </div>
+          </div>
         </div>
       </main>
     </div>
