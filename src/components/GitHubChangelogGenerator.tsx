@@ -16,6 +16,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from "@/components/ui/button";
 import { useTheme } from "next-themes";
+import EditableChangelog from '@/components/EditableChangelog';
 import ReactMarkdown from 'react-markdown';
 
 const GramphibianLogo = () => (
@@ -266,60 +267,12 @@ const ChangelogGenerator = () => {
           </div>
 
           {/* Output Section */}
-          <div>
-            <Card className="h-full">
-              <CardHeader>
-                <CardTitle className="flex justify-between items-center">
-                  Generated Changelog
-                  {changelog && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={handleCopy}
-                      className="space-x-2"
-                    >
-                      {copied ? (
-                        <>
-                          <Check className="h-4 w-4" />
-                          <span>Copied!</span>
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="h-4 w-4" />
-                          <span>Copy Markdown</span>
-                        </>
-                      )}
-                    </Button>
-                  )}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {changelog ? (
-                  <div className="space-y-4">
-                    <div className="prose prose-sm dark:prose-invert max-w-none">
-                      <ReactMarkdown>{changelog}</ReactMarkdown>
-                    </div>
-                    <div className="border-t pt-4">
-                      <details>
-                        <summary className="text-sm text-muted-foreground cursor-pointer">
-                          View Raw Markdown
-                        </summary>
-                        <pre className="mt-2 whitespace-pre-wrap text-sm bg-muted p-4 rounded-lg overflow-auto max-h-[200px]">
-                          {changelog}
-                        </pre>
-                      </details>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-center text-muted-foreground py-12">
-                    <History className="h-12 w-12 mx-auto mb-4" />
-                    <p>Your generated changelog will appear here</p>
-                    <p className="text-sm mt-2">Generated in Markdown format</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
+            <div>
+            <EditableChangelog 
+                initialContent={changelog}
+                onSave={(newContent) => setChangelog(newContent)}
+            />
+            </div>
         </div>
       </main>
     </div>
