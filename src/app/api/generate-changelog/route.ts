@@ -2,36 +2,111 @@
 
 import { NextResponse } from 'next/server';
 import { GitHubDiffGenerator } from '@/lib/github-diff-generator';
-
 function formatToMarkdown(content: string): string {
-  let markdown = '';
+    let markdown = '';
+    
+    // Define section icons
+    const sectionIcons: Record<string, string> = {
+      'Breaking Changes': '⚠️',
+      'Features': '✨',
+      'Improvements': '🚀',
+      'Bug Fixes': '🐛',
+      'Security': '🔒',
+      'Performance': '⚡',
+      'Documentation': '📚',
+      'Dependencies': '📦',
+      'Refactor': '♻️',
+      'Tests': '🧪',
+      'Other': '📋'
+    };
   
-  // Split content into sections
-  const sections = content.split(/\n(?=Features:|Improvements:|Bug Fixes:|Breaking Changes:)/g);
-  
-  sections.forEach(section => {
-    if (section.trim()) {
-      // Extract section title and items
-      const [title, ...items] = section.split('\n');
-      
-      // Add section header
-      markdown += `## ${title.trim()}\n`;
-      
-      // Add items with proper Markdown list formatting
-      items.forEach(item => {
-        if (item.trim()) {
-          // Remove any existing bullet points or dashes
-          const cleanItem = item.trim().replace(/^[•\-\*]\s*/, '');
-          markdown += `- ${cleanItem}\n`;
+    // Define subsection icons for items starting with #
+    const subsectionIcons: Record<string, string> = {
+      'breaking': '⚠️',
+      'feature': '✨',
+      'feat': '✨',
+      'improve': '🚀',
+      'enhancement': '🚀',
+      'fix': '🐛',
+      'bug': '🐛',
+      'security': '🔒',
+      'perf': '⚡',
+      'performance': '⚡',
+      'doc': '📚',
+      'docs': '📚',
+      'dep': '📦',
+      'deps': '📦',
+      'dependencies': '📦',
+      'refactor': '♻️',
+      'test': '🧪',
+      'tests': '🧪',
+      'ci': '🔄',
+      'build': '🛠️',
+      'chore': '🧹',
+      'style': '💅',
+      'i18n': '🌐',
+      'a11y': '♿',
+      'accessibility': '♿',
+      'ui': '🎨',
+      'ux': '🎯'
+    };
+    
+    // Split content into sections
+    const sections = content.split(/\n(?=Features:|Improvements:|Bug Fixes:|Breaking Changes:|Security:|Performance:|Documentation:|Dependencies:|Refactor:|Tests:|Other:)/g);
+    
+    sections.forEach(section => {
+      if (section.trim()) {
+        // Extract section title and items
+        const [title, ...items] = section.split('\n');
+        const cleanTitle = title.trim();
+        
+        // Find matching icon for section
+        let icon = '📋'; // Default icon
+        for (const [keyTitle, keyIcon] of Object.entries(sectionIcons)) {
+          if (cleanTitle.includes(keyTitle)) {
+            icon = keyIcon;
+            break;
+          }
         }
-      });
-      
-      markdown += '\n';
-    }
-  });
-  
-  return markdown.trim();
-}
+        
+        // Add section header with icon
+        markdown += `## ${icon} ${cleanTitle}\n`;
+        
+        // Add items with proper Markdown list formatting
+        items.forEach(item => {
+          if (item.trim()) {
+            const trimmedItem = item.trim();
+            
+            // Check if item starts with #
+            if (trimmedItem.startsWith('#')) {
+              // Remove all leading # characters and trim
+              const cleanItem = trimmedItem.replace(/^#+\s*/, '');
+              
+              // Find matching icon for subsection
+              let subsectionIcon = '📋'; // Default icon
+              for (const [key, keyIcon] of Object.entries(subsectionIcons)) {
+                if (cleanItem.toLowerCase().includes(key)) {
+                  subsectionIcon = keyIcon;
+                  break;
+                }
+              }
+              
+              // Add as a subsection with icon
+              markdown += `### ${subsectionIcon} ${cleanItem}\n`;
+            } else {
+              // Handle normal list item
+              const cleanItem = trimmedItem.replace(/^[•\-\*]\s*/, '');
+              markdown += `- ${cleanItem}\n`;
+            }
+          }
+        });
+        
+        markdown += '\n';
+      }
+    });
+    
+    return markdown.trim();
+  }
 
 export async function POST(request: Request) {
   try {

@@ -210,7 +210,7 @@ export class GitHubDiffGenerator {
         },
         {
           role: "user",
-          content: `Generate a clear and concise changelog from these git diffs. Focus on the impact and meaning of changes, not the technical details:\n\n${diffText}`
+          content: `Generate a clear and concise changelog from these git diffs. Focus on the impact and meaning of changes, not the technical details. Also include links to the relavent github pull requests wherever possible:\n\n${diffText}`
         }
       ],
       temperature: 0.7,
