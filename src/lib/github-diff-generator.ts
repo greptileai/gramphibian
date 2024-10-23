@@ -72,7 +72,7 @@ interface DiffSummary {
   };
 }
 
-type LLMProvider = 'none' | 'greptile' | 'openai';
+// type LLMProvider = 'none' | 'greptile' | 'openai';
 
 export class GitHubDiffGenerator {
   private githubToken: string;
