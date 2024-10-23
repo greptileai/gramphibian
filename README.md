@@ -24,7 +24,6 @@ Hi, welcome to Gramphibian - A tool that automatically generates changelogs for 
 1. Clone the repository:
 ```bash
 git clone https://github.com/AbhinavHampiholi/changelog-generator.git
-cd changelog-generator
 ```
 
 2. Install dependencies:
