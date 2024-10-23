@@ -1,7 +1,6 @@
 
-# AI Changelog Generator
-
-An intelligent changelog generator that uses AI to create meaningful changelogs from Git commits. Supports multiple AI providers (OpenAI GPT-4 and Greptile) for generating human-readable changelogs.
+# Gramphibian
+Hi, welcome to Gramphibian - A tool that automatically generates changelogs for you! 
 
 ## Features
 
@@ -39,9 +38,9 @@ GITHUB_PAT=your_github_personal_access_token
 OPENAI_API_KEY=your_openai_api_key
 GREPTILE_API_KEY=your_greptile_api_key
 
-# Enable ONE of these (or neither for mock changelog)
-ENABLE_GREPTILE=false
-ENABLE_OPENAI=false
+# Enable these
+ENABLE_GREPTILE=true
+ENABLE_OPENAI=true
 ```
 
 ## Usage
@@ -77,19 +76,4 @@ The project uses:
 - TypeScript
 - Tailwind CSS
 - shadcn/ui components
-
-Logs are written to:
-- `logs/changelog-debug.log`: All logs
-- `logs/changelog-error.log`: Error logs only
-
-## License
-
-MIT
-
-## Contributing
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+- I used Claude Sonnet to generate most of the boilerplate
