@@ -7,8 +7,6 @@ import {
   Calendar, 
   History, 
   Loader2, 
-  Copy, 
-  Check,
   Moon,
   Sun
 } from 'lucide-react';
@@ -17,7 +15,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from "@/components/ui/button";
 import { useTheme } from "next-themes";
 import EditableChangelog from '@/components/EditableChangelog';
-import ReactMarkdown from 'react-markdown';
 import RepoSuggestions from './RepoSuggestions';
 
 const GramphibianLogo = () => (
@@ -47,7 +44,6 @@ const ChangelogGenerator = () => {
   const [error, setError] = useState('');
   const [changelog, setChangelog] = useState('');
   const [recentRepos, setRecentRepos] = useState<string[]>([]);
-  const [copied, setCopied] = useState(false);
   const [formData, setFormData] = useState<FormData>({
     repoUrl: '',
     startDate: '',
@@ -146,11 +142,11 @@ const ChangelogGenerator = () => {
     }
   };
 
-  const handleCopy = async () => {
-    await navigator.clipboard.writeText(changelog);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
+//   const handleCopy = async () => {
+//     await navigator.clipboard.writeText(changelog);
+//     setCopied(true);
+//     setTimeout(() => setCopied(false), 2000);
+//   };
 
   return (
     <div className="min-h-screen bg-background">

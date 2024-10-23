@@ -186,27 +186,3 @@ export async function POST(request: Request) {
     );
   }
 }
-
-// Helper function to validate GitHub URL
-function isValidGitHubUrl(url: string): boolean {
-  try {
-    const parsed = new URL(url);
-    return parsed.hostname === 'github.com' && parsed.pathname.split('/').length >= 3;
-  } catch {
-    return false;
-  }
-}
-
-// Helper function to validate date range
-function isValidDateRange(startDate: string, endDate: string): boolean {
-  const start = new Date(startDate);
-  const end = new Date(endDate);
-  const now = new Date();
-
-  return (
-    start instanceof Date && !isNaN(start.getTime()) &&
-    end instanceof Date && !isNaN(end.getTime()) &&
-    start <= end &&
-    end <= now
-  );
-}

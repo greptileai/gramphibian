@@ -59,6 +59,31 @@ interface CommitData {
   sha: string;
 }
 
+// interface ChangelogMetadata {
+//     generatedAt: string;
+//     period: {
+//       start: string;
+//       end: string;
+//     };
+//   }
+  
+  interface SubmitMetadata {
+    repo: string;
+    period: {
+      start: string;
+      end: string;
+    };
+  }
+  
+//   interface GreptileMessage {
+//     content: string;
+//     role: string;
+//   }
+  
+//   interface GreptileResponse {
+//     message: string;
+//   }
+
 interface DiffSummary {
   additions: number;
   deletions: number;
@@ -100,8 +125,7 @@ export class GitHubDiffGenerator {
       llmProvider: this.llmProvider
     });
   }
-
-  private async submitToGramaphone(changelog: string, metadata: any) {
+  private async submitToGramaphone(changelog: string, metadata: SubmitMetadata): Promise<{ id: string }> {
     const url = `${this.gramaphoneUrl}/api/changelogs`;
     console.log('Submitting to Gramaphone:', {
       url,
@@ -137,7 +161,7 @@ export class GitHubDiffGenerator {
         throw new Error(`Failed to submit to Gramaphone: ${response.status} ${errorText}`);
       }
   
-      const result = await response.json();
+      const result = await response.json() as { id: string };
       console.log('Gramaphone success:', result);
       return result;
     } catch (error) {
@@ -147,7 +171,7 @@ export class GitHubDiffGenerator {
           stack: error.stack
         } : 'Unknown error',
         url,
-        metadata: metadata
+        metadata
       });
       throw error;
     }
@@ -177,7 +201,7 @@ export class GitHubDiffGenerator {
     let page = 1;
     let allCommits: CommitData[] = [];
     let hasMore = true;
-
+  
     while (hasMore && allCommits.length < MAX_TOTAL_COMMITS) {
       const response = await axios.get(`${this.apiBaseUrl}/repos/${owner}/${repo}/commits`, {
         ...this.getAxiosConfig(),
@@ -188,28 +212,28 @@ export class GitHubDiffGenerator {
           page: page
         },
       });
-
+  
       // Get detailed commit data for each commit
       const commitDetails = await Promise.all(
-        response.data.map((commit: any) => 
+        response.data.map((commit: { url: string }) => 
           axios.get(commit.url, this.getAxiosConfig())
-            .then(res => res.data)
+            .then(res => res.data as CommitData)
         )
       );
-
+  
       allCommits = [...allCommits, ...commitDetails];
-
+  
       // Check if there are more pages
       const linkHeader = response.headers.link;
       hasMore = linkHeader?.includes('rel="next"') ?? false;
       page++;
-
+  
       // Add a small delay to avoid rate limiting
       await new Promise(resolve => setTimeout(resolve, 100));
-
+  
       logger.info(`Fetched page ${page-1}, total commits: ${allCommits.length}`);
     }
-
+  
     return allCommits;
   }
 

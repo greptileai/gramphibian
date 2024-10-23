@@ -13,9 +13,7 @@ interface RepoSuggestionsProps {
   onSelect: (repo: string) => void;
 }
 
-const RepoSuggestions = ({ recentRepos, onSelect }: RepoSuggestionsProps) => {
-  const allSuggestions = [...new Set([...recentRepos, ...DEFAULT_REPOS])];
-  
+const RepoSuggestions = ({ recentRepos, onSelect }: RepoSuggestionsProps) => {  
   return (
     <div className="mt-2 space-y-2">
       {recentRepos.length > 0 && (
