@@ -101,18 +101,20 @@ export class GitHubDiffGenerator {
     });
   }
 
-  private async submitToGramaphone(changelog: string, metadata: { 
-    repo: string; 
-    period: { start: string; end: string; }
-  }): Promise<void> {
-    try {
-      logger.info('Submitting changelog to Gramaphone', {
+  private async submitToGramaphone(changelog: string, metadata: any) {
+    const url = `${this.gramaphoneUrl}/api/changelogs`;
+    console.log('Submitting to Gramaphone:', {
+      url,
+      gramaphoneUrl: this.gramaphoneUrl,
+      metadataPreview: {
         repo: metadata.repo,
-        periodStart: metadata.period.start,
-        periodEnd: metadata.period.end
-      });
+        period: metadata.period
+      },
+      changelogPreview: changelog.substring(0, 100) + '...' // First 100 chars
+    });
   
-      const response = await fetch(`${this.gramaphoneUrl}/api/changelogs`, {
+    try {
+      const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -127,17 +129,27 @@ export class GitHubDiffGenerator {
         })
       });
   
+      console.log('Gramaphone response status:', response.status);
+  
       if (!response.ok) {
-        const error = await response.text();
-        throw new Error(`Failed to submit to Gramaphone: ${error}`);
+        const errorText = await response.text();
+        console.error('Gramaphone error response:', errorText);
+        throw new Error(`Failed to submit to Gramaphone: ${response.status} ${errorText}`);
       }
   
-      logger.info('Successfully submitted to Gramaphone');
+      const result = await response.json();
+      console.log('Gramaphone success:', result);
+      return result;
     } catch (error) {
-      logger.error('Error submitting to Gramaphone', {
-        error: error instanceof Error ? error.message : 'Unknown error'
+      console.error('Gramaphone submit error:', {
+        error: error instanceof Error ? {
+          message: error.message,
+          stack: error.stack
+        } : 'Unknown error',
+        url,
+        metadata: metadata
       });
-      throw new Error('Failed to submit to Gramaphone: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      throw error;
     }
   }
 

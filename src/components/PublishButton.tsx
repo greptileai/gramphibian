@@ -25,7 +25,9 @@ export default function PublishButton({ changelog, metadata }: PublishButtonProp
     setErrorMessage('');
 
     try {
-      const response = await fetch('http://localhost:3000/api/changelogs', {
+      console.log('Publishing to:', process.env.NEXT_PUBLIC_GRAMAPHONE_URL);
+      
+      const response = await fetch(`${process.env.NEXT_PUBLIC_GRAMAPHONE_URL}/api/changelogs`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -41,12 +43,14 @@ export default function PublishButton({ changelog, metadata }: PublishButtonProp
       });
 
       if (!response.ok) {
-        throw new Error('Failed to publish to Gramaphone');
+        const errorText = await response.text();
+        throw new Error(`Failed to publish to Gramaphone: ${errorText}`);
       }
 
       setPublishStatus('success');
       setTimeout(() => setPublishStatus('idle'), 3000);
     } catch (error) {
+      console.error('Publishing error:', error);
       setPublishStatus('error');
       setErrorMessage(error instanceof Error ? error.message : 'Failed to publish changelog');
     } finally {
@@ -58,7 +62,7 @@ export default function PublishButton({ changelog, metadata }: PublishButtonProp
     <div className="space-y-2">
       <Button
         onClick={publishToGramaphone}
-        disabled={isPublishing || !changelog}
+        disabled={isPublishing || !changelog || !process.env.NEXT_PUBLIC_GRAMAPHONE_URL}
         variant={publishStatus === 'success' ? "outline" : "default"}
         className="w-full"
       >
