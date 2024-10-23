@@ -289,36 +289,81 @@ export class GitHubDiffGenerator {
 
     return completion.choices[0].message.content || 'No changelog generated';
   }
-
   private async generateWithGreptile(diffText: string, repoUrl: string): Promise<string> {
-    logger.info('Calling Greptile API');
-    const greptileResponse = await fetch("https://api.greptile.com/v2/query", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${process.env.GREPTILE_API_KEY}`,
-        "X-Github-Token": this.githubToken,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        messages: [{
-          content: `Generate a concise and human-readable changelog using the following diffs: ${diffText}`,
-          role: "user"
-        }],
-        repositories: [{
-          remote: "github",
-          repository: repoUrl,
-          branch: "main"
-        }],
-        genius: true
-      })
+    const { owner, repo } = this.parseGitHubUrl(repoUrl);
+    
+    logger.info('Calling Greptile API', {
+      repo: `${owner}/${repo}`,
+      diffLength: diffText.length
     });
-
-    if (!greptileResponse.ok) {
-      throw new Error(`Failed to generate changelog: ${greptileResponse.statusText}`);
+  
+    try {
+      const greptileResponse = await fetch("https://api.greptile.com/v2/query", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${process.env.GREPTILE_API_KEY}`,
+          "X-Github-Token": this.githubToken,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          messages: [{
+            content: `You are a changelog generator tasked with creating a clear, structured changelog entry. 
+            
+  First, analyze the repository's existing changelog format and style from any CHANGELOG.md files.
+  Then, generate a changelog entry for these changes that matches the project's style:
+  
+  Changes to analyze:
+  ${diffText}
+  
+  Requirements:
+  1. Match the repository's existing changelog style if found
+  2. Focus on user-facing impact and benefits
+  3. Include PR numbers if available in commit messages
+  4. Group changes into appropriate categories:
+     - Breaking Changes (if any)
+     - Features (new additions)
+     - Improvements (enhancements)
+     - Bug Fixes
+     - Performance
+     - Documentation
+     - Tests
+  5. Use clear, concise language
+  6. Include any relevant migration notes for breaking changes`,
+            role: "user"
+          }],
+          repositories: [{
+            remote: "github",
+            repository: `${owner}/${repo}`,
+            branch: "main"
+          }]
+        })
+      });
+  
+      if (!greptileResponse.ok) {
+        const errorText = await greptileResponse.text();
+        throw new Error(`Greptile API request failed: ${greptileResponse.status} ${errorText}`);
+      }
+  
+      const data = await greptileResponse.json();
+      
+      if (!data.message) {
+        throw new Error('No changelog content received from Greptile');
+      }
+  
+      logger.info('Greptile response received', {
+        responseLength: data.message.length,
+        sourcesCount: data.sources?.length || 0
+      });
+  
+      return data.message;
+  
+    } catch (error) {
+      logger.error('Greptile API error', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      });
+      throw error;
     }
-
-    const changelogData = await greptileResponse.json();
-    return changelogData.message;
   }
 
   async getRepoDiff(repoUrl: string, startDate: Date, endDate: Date): Promise<DiffSummary> {
