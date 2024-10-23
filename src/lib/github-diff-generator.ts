@@ -1,33 +1,22 @@
 import axios from 'axios';
 import { format } from 'date-fns';
-import winston from 'winston';
-import path from 'path';
 import OpenAI from 'openai';
 
 // Configure logger
-const logger = winston.createLogger({
-  level: 'debug',
-  format: winston.format.combine(
-    winston.format.timestamp(),
-    winston.format.json()
-  ),
-  transports: [
-    new winston.transports.File({ 
-      filename: path.join(process.cwd(), 'logs', 'changelog-debug.log')
-    }),
-    new winston.transports.File({ 
-      filename: path.join(process.cwd(), 'logs', 'changelog-error.log'), 
-      level: 'error' 
-    })
-  ]
-});
-
-// Also log to console in development
-if (process.env.NODE_ENV !== 'production') {
-  logger.add(new winston.transports.Console({
-    format: winston.format.simple()
-  }));
-}
+const logger = {
+    info: (message: string, meta?: any) => {
+      console.log(`[INFO] ${message}`, meta || '');
+    },
+    error: (message: string, meta?: any) => {
+      console.error(`[ERROR] ${message}`, meta || '');
+    },
+    debug: (message: string, meta?: any) => {
+      console.debug(`[DEBUG] ${message}`, meta || '');
+    },
+    warn: (message: string, meta?: any) => {
+      console.warn(`[WARN] ${message}`, meta || '');
+    }
+  };
 
 // Constants for GitHub API limits
 const MAX_PER_PAGE = 100;
