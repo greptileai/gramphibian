@@ -1,5 +1,4 @@
 import winston from 'winston';
-import path from 'path';
 
 // Configure the logger
 const logger = winston.createLogger({
