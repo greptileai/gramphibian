@@ -3,25 +3,23 @@ import { format } from 'date-fns';
 import OpenAI from 'openai';
 
 type LogMetadata = {
-    [key: string]: string | number | boolean | null | undefined | Date | LogMetadata;
-  };
-  
-  // Configure logger with proper typing
-const logger = {
-    info: (message: string, meta?: LogMetadata) => {
-        console.log(`[INFO] ${message}`, meta || '');
-    },
-    error: (message: string, meta?: LogMetadata) => {
-        console.error(`[ERROR] ${message}`, meta || '');
-    },
-    debug: (message: string, meta?: LogMetadata) => {
-        console.debug(`[DEBUG] ${message}`, meta || '');
-    },
-    warn: (message: string, meta?: LogMetadata) => {
-        console.warn(`[WARN] ${message}`, meta || '');
-    }
+  [key: string]: string | number | boolean | null | undefined | Date | LogMetadata;
 };
-  
+
+const logger = {
+  info: (message: string, meta?: LogMetadata) => {
+    console.log(`[INFO] ${message}`, meta || '');
+  },
+  error: (message: string, meta?: LogMetadata) => {
+    console.error(`[ERROR] ${message}`, meta || '');
+  },
+  debug: (message: string, meta?: LogMetadata) => {
+    console.debug(`[DEBUG] ${message}`, meta || '');
+  },
+  warn: (message: string, meta?: LogMetadata) => {
+    console.warn(`[WARN] ${message}`, meta || '');
+  }
+};
 
 // Constants for GitHub API limits
 const MAX_PER_PAGE = 100;
@@ -53,30 +51,13 @@ interface CommitData {
   sha: string;
 }
 
-// interface ChangelogMetadata {
-//     generatedAt: string;
-//     period: {
-//       start: string;
-//       end: string;
-//     };
-//   }
-  
-  interface SubmitMetadata {
-    repo: string;
-    period: {
-      start: string;
-      end: string;
-    };
-  }
-  
-//   interface GreptileMessage {
-//     content: string;
-//     role: string;
-//   }
-  
-//   interface GreptileResponse {
-//     message: string;
-//   }
+interface SubmitMetadata {
+  repo: string;
+  period: {
+    start: string;
+    end: string;
+  };
+}
 
 interface DiffSummary {
   additions: number;
@@ -96,39 +77,51 @@ type LLMProvider = 'none' | 'greptile' | 'openai';
 export class GitHubDiffGenerator {
   private githubToken: string;
   private apiBaseUrl = 'https://api.github.com';
-  private llmProvider: LLMProvider;
   private openai: OpenAI | null = null;
   private gramaphoneUrl: string;
+  private indexedRepos = [
+    'facebook/react',
+    'microsoft/vscode',
+    'rstudio/marimo'
+  ];
 
   constructor(githubToken: string) {
     this.githubToken = githubToken;
     this.gramaphoneUrl = process.env.GRAMAPHONE_URL || 'http://localhost:3000';
+
     if (process.env.ENABLE_OPENAI === 'true') {
-      this.llmProvider = 'openai';
       this.openai = new OpenAI({
         apiKey: process.env.OPENAI_API_KEY
       });
-    } else if (process.env.ENABLE_GREPTILE === 'true') {
-      this.llmProvider = 'greptile';
-    } else {
-      this.llmProvider = 'none';
     }
 
     logger.info('GitHubDiffGenerator initialized', { 
-      tokenLength: githubToken.length,
-      llmProvider: this.llmProvider
+      tokenLength: githubToken.length
     });
   }
+
+  private async selectLLMProvider(repoUrl: string): Promise<'openai' | 'greptile'> {
+    const { owner, repo } = this.parseGitHubUrl(repoUrl);
+    const fullRepoName = `${owner}/${repo}`;
+    
+    if (this.indexedRepos.includes(fullRepoName) && process.env.ENABLE_GREPTILE === 'true') {
+      logger.info('Using Greptile for indexed repository', { repo: fullRepoName });
+      return 'greptile';
+    }
+    
+    if (process.env.ENABLE_OPENAI === 'true') {
+      logger.info('Using OpenAI for unindexed repository', { repo: fullRepoName });
+      return 'openai';
+    }
+
+    throw new Error('No LLM provider enabled. Set either ENABLE_GREPTILE=true or ENABLE_OPENAI=true');
+  }
+
   private async submitToGramaphone(changelog: string, metadata: SubmitMetadata): Promise<{ id: string }> {
     const url = `${this.gramaphoneUrl}/api/changelogs`;
-    console.log('Submitting to Gramaphone:', {
+    logger.info('Submitting to Gramaphone', {
       url,
-      gramaphoneUrl: this.gramaphoneUrl,
-      metadataPreview: {
-        repo: metadata.repo,
-        period: metadata.period
-      },
-      changelogPreview: changelog.substring(0, 100) + '...' // First 100 chars
+      metadataPreview: metadata
     });
   
     try {
@@ -147,25 +140,16 @@ export class GitHubDiffGenerator {
         })
       });
   
-      console.log('Gramaphone response status:', response.status);
-  
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Gramaphone error response:', errorText);
         throw new Error(`Failed to submit to Gramaphone: ${response.status} ${errorText}`);
       }
   
-      const result = await response.json() as { id: string };
-      console.log('Gramaphone success:', result);
-      return result;
+      return await response.json() as { id: string };
     } catch (error) {
-      console.error('Gramaphone submit error:', {
-        error: error instanceof Error ? {
-          message: error.message,
-          stack: error.stack
-        } : 'Unknown error',
-        url,
-        metadata
+      logger.error('Gramaphone submit error', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        url
       });
       throw error;
     }
@@ -181,14 +165,11 @@ export class GitHubDiffGenerator {
   }
 
   private parseGitHubUrl(repoUrl: string): { owner: string; repo: string } {
-    logger.debug('Parsing GitHub URL', { repoUrl });
     const parts = repoUrl.replace('https://github.com/', '').split('/');
-    const result = {
+    return {
       owner: parts[parts.length - 2],
       repo: parts[parts.length - 1].replace('.git', ''),
     };
-    logger.debug('Parsed GitHub URL', result);
-    return result;
   }
 
   private async getAllCommits(owner: string, repo: string, startDate: Date, endDate: Date): Promise<CommitData[]> {
@@ -207,7 +188,6 @@ export class GitHubDiffGenerator {
         },
       });
   
-      // Get detailed commit data for each commit
       const commitDetails = await Promise.all(
         response.data.map((commit: { url: string }) => 
           axios.get(commit.url, this.getAxiosConfig())
@@ -216,15 +196,11 @@ export class GitHubDiffGenerator {
       );
   
       allCommits = [...allCommits, ...commitDetails];
-  
-      // Check if there are more pages
       const linkHeader = response.headers.link;
       hasMore = linkHeader?.includes('rel="next"') ?? false;
       page++;
   
-      // Add a small delay to avoid rate limiting
       await new Promise(resolve => setTimeout(resolve, 100));
-  
       logger.info(`Fetched page ${page-1}, total commits: ${allCommits.length}`);
     }
   
@@ -244,13 +220,10 @@ export class GitHubDiffGenerator {
       diffCount: diffs.length
     });
 
-    // Strategy: Keep the first part of each commit's diff to preserve context
     const truncatedDiffs = diffs.map(diff => {
       const sections = diff.split('\n');
-      const commitInfo = sections.slice(0, 3).join('\n'); // Keep commit SHA, date, and message
+      const commitInfo = sections.slice(0, 3).join('\n');
       const content = sections.slice(3).join('\n');
-      
-      // Take first 200 chars of each diff content
       const truncatedContent = content.substring(0, 200);
       return `${commitInfo}\n${truncatedContent}${content.length > 200 ? '\n... (truncated)' : ''}`;
     });
@@ -258,7 +231,7 @@ export class GitHubDiffGenerator {
     let result = truncatedDiffs.join('\n\n');
     
     if (result.length > MAX_DIFF_LENGTH) {
-      const maxDiffs = Math.floor(MAX_DIFF_LENGTH / 400); // Adjusted for commit info
+      const maxDiffs = Math.floor(MAX_DIFF_LENGTH / 400);
       result = truncatedDiffs.slice(0, maxDiffs).join('\n\n');
       result += `\n\n... (${diffs.length - maxDiffs} more changes)`;
     }
@@ -281,22 +254,24 @@ export class GitHubDiffGenerator {
         },
         {
           role: "user",
-          content: `Generate a clear and concise changelog from these git diffs. Focus on the impact and meaning of changes, not the technical details. Also include links to the relavent github pull requests wherever possible:\n\n${diffText}`
+          content: `Generate a clear and concise changelog from these git diffs. Include links to PRs and contributers where you can. Focus on the impact and meaning of changes, not the technical details:\n\n${diffText}`
         }
       ],
       temperature: 0.7,
     });
 
-    return completion.choices[0].message.content || 'No changelog generated';
+    const changelog = completion.choices[0].message.content || 'No changelog generated';
+    return `${changelog}\n\n_Generated with: OpenAI GPT-4_`;
   }
+
   private async generateWithGreptile(diffText: string, repoUrl: string): Promise<string> {
     const { owner, repo } = this.parseGitHubUrl(repoUrl);
-    
+  
     logger.info('Calling Greptile API', {
       repo: `${owner}/${repo}`,
       diffLength: diffText.length
     });
-  
+
     try {
       const greptileResponse = await fetch("https://api.greptile.com/v2/query", {
         method: "POST",
@@ -307,28 +282,7 @@ export class GitHubDiffGenerator {
         },
         body: JSON.stringify({
           messages: [{
-            content: `You are a changelog generator tasked with creating a clear, structured changelog entry. 
-            
-  First, analyze the repository's existing changelog format and style from any CHANGELOG.md files.
-  Then, generate a changelog entry for these changes that matches the project's style:
-  
-  Changes to analyze:
-  ${diffText}
-  
-  Requirements:
-  1. Match the repository's existing changelog style if found
-  2. Focus on user-facing impact and benefits
-  3. Include PR numbers if available in commit messages
-  4. Group changes into appropriate categories:
-     - Breaking Changes (if any)
-     - Features (new additions)
-     - Improvements (enhancements)
-     - Bug Fixes
-     - Performance
-     - Documentation
-     - Tests
-  5. Use clear, concise language
-  6. Include any relevant migration notes for breaking changes`,
+            content: `Generate a clear and concise changelog from these git diffs. Include links to PRs and contributers where you can. Focus on user-facing changes and organize them into Features, Improvements, and Bug Fixes categories. Do not output a numbered list. Bullet points are preferred. Here are the diffs:${diffText}`,
             role: "user"
           }],
           repositories: [{
@@ -338,25 +292,25 @@ export class GitHubDiffGenerator {
           }]
         })
       });
-  
+
       if (!greptileResponse.ok) {
         const errorText = await greptileResponse.text();
         throw new Error(`Greptile API request failed: ${greptileResponse.status} ${errorText}`);
       }
-  
+
       const data = await greptileResponse.json();
       
       if (!data.message) {
         throw new Error('No changelog content received from Greptile');
       }
-  
+
       logger.info('Greptile response received', {
         responseLength: data.message.length,
         sourcesCount: data.sources?.length || 0
       });
-  
-      return data.message;
-  
+
+      return `${data.message}\n\n_Generated with: Greptile_`;
+
     } catch (error) {
       logger.error('Greptile API error', {
         error: error instanceof Error ? error.message : 'Unknown error',
@@ -422,20 +376,8 @@ export class GitHubDiffGenerator {
     } catch (error) {
       logger.error('Error in getRepoDiff', {
         error: error instanceof Error ? error.message : 'Unknown error',
-        response: axios.isAxiosError(error) ? {
-          status: error.response?.status,
-          data: error.response?.data
-        } : undefined
+        stack: error instanceof Error ? error.stack : undefined
       });
-
-      if (axios.isAxiosError(error)) {
-        if (error.response?.status === 403) {
-          throw new Error('GitHub API rate limit exceeded or authentication failed');
-        }
-        if (error.response?.status === 404) {
-          throw new Error('Repository not found or private repository access denied');
-        }
-      }
       throw error;
     }
   }
@@ -444,8 +386,7 @@ export class GitHubDiffGenerator {
     logger.info('Starting changelog generation', {
       repoUrl,
       startDate: startDate.toISOString(),
-      endDate: endDate.toISOString(),
-      llmProvider: this.llmProvider
+      endDate: endDate.toISOString()
     });
 
     try {
@@ -457,7 +398,6 @@ export class GitHubDiffGenerator {
         truncatedLength: truncatedDiffText.length
       });
 
-      // Add warning if there are more commits
       let warningMessage = '';
       if (diff.hasMore) {
         warningMessage = `
@@ -467,8 +407,11 @@ The actual number of changes during this period may be larger.
 `;
       }
 
+      // Determine which LLM to use and generate changelog
+      const selectedProvider = await this.selectLLMProvider(repoUrl);
       let changelogContent: string;
-      switch (this.llmProvider) {
+      
+      switch (selectedProvider) {
         case 'openai':
           changelogContent = await this.generateWithOpenAI(truncatedDiffText);
           break;
@@ -477,30 +420,13 @@ The actual number of changes during this period may be larger.
           changelogContent = await this.generateWithGreptile(truncatedDiffText, repoUrl);
           break;
 
-        case 'none':
-          changelogContent = `LLM DISABLED - Sample Changelog
-          
-Changes between ${format(startDate, 'yyyy-MM-dd')} and ${format(endDate, 'yyyy-MM-dd')}:
-
-Total Changes:
-- ${diff.additions} additions
-- ${diff.deletions} deletions
-- Net change: ${diff.netDiff} lines
-- Total commits analyzed: ${diff.totalCommits}
-
-Sample of changes:
-${truncatedDiffText.substring(0, 1000)}...
-
-Note: This is a preview. Enable an LLM by setting either ENABLE_GREPTILE=true or ENABLE_OPENAI=true in your environment.`;
-          break;
-
         default:
-          throw new Error('Invalid LLM provider configuration');
+          throw new Error('No LLM provider configured');
       }
 
       const finalChangelog = warningMessage + changelogContent;
 
-      // Add this block
+      // Submit to Gramaphone if requested
       if (shouldPublish) {
         try {
           await this.submitToGramaphone(finalChangelog, {

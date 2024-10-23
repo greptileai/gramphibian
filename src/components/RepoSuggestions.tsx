@@ -3,7 +3,6 @@ import React from 'react';
 
 const DEFAULT_REPOS = [
   'https://github.com/marimo-team/marimo',
-  'https://github.com/apache/spark',
   'https://github.com/microsoft/vscode',
   'https://github.com/facebook/react'
 ];
