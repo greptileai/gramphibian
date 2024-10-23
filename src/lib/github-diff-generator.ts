@@ -2,21 +2,26 @@ import axios from 'axios';
 import { format } from 'date-fns';
 import OpenAI from 'openai';
 
-// Configure logger
-const logger = {
-    info: (message: string, meta?: any) => {
-      console.log(`[INFO] ${message}`, meta || '');
-    },
-    error: (message: string, meta?: any) => {
-      console.error(`[ERROR] ${message}`, meta || '');
-    },
-    debug: (message: string, meta?: any) => {
-      console.debug(`[DEBUG] ${message}`, meta || '');
-    },
-    warn: (message: string, meta?: any) => {
-      console.warn(`[WARN] ${message}`, meta || '');
-    }
+type LogMetadata = {
+    [key: string]: string | number | boolean | null | undefined | Date | LogMetadata;
   };
+  
+  // Configure logger with proper typing
+const logger = {
+    info: (message: string, meta?: LogMetadata) => {
+        console.log(`[INFO] ${message}`, meta || '');
+    },
+    error: (message: string, meta?: LogMetadata) => {
+        console.error(`[ERROR] ${message}`, meta || '');
+    },
+    debug: (message: string, meta?: LogMetadata) => {
+        console.debug(`[DEBUG] ${message}`, meta || '');
+    },
+    warn: (message: string, meta?: LogMetadata) => {
+        console.warn(`[WARN] ${message}`, meta || '');
+    }
+};
+  
 
 // Constants for GitHub API limits
 const MAX_PER_PAGE = 100;
