@@ -79,10 +79,11 @@ export class GitHubDiffGenerator {
   private apiBaseUrl = 'https://api.github.com';
   private llmProvider: LLMProvider;
   private openai: OpenAI | null = null;
+  private gramaphoneUrl: string;
 
   constructor(githubToken: string) {
     this.githubToken = githubToken;
-    
+    this.gramaphoneUrl = process.env.GRAMAPHONE_URL || 'http://localhost:3000';
     if (process.env.ENABLE_OPENAI === 'true') {
       this.llmProvider = 'openai';
       this.openai = new OpenAI({
@@ -98,6 +99,46 @@ export class GitHubDiffGenerator {
       tokenLength: githubToken.length,
       llmProvider: this.llmProvider
     });
+  }
+
+  private async submitToGramaphone(changelog: string, metadata: { 
+    repo: string; 
+    period: { start: string; end: string; }
+  }): Promise<void> {
+    try {
+      logger.info('Submitting changelog to Gramaphone', {
+        repo: metadata.repo,
+        periodStart: metadata.period.start,
+        periodEnd: metadata.period.end
+      });
+  
+      const response = await fetch(`${this.gramaphoneUrl}/api/changelogs`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          repoUrl: metadata.repo,
+          content: changelog,
+          metadata: {
+            generatedAt: new Date().toISOString(),
+            period: metadata.period
+          }
+        })
+      });
+  
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(`Failed to submit to Gramaphone: ${error}`);
+      }
+  
+      logger.info('Successfully submitted to Gramaphone');
+    } catch (error) {
+      logger.error('Error submitting to Gramaphone', {
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+      throw new Error('Failed to submit to Gramaphone: ' + (error instanceof Error ? error.message : 'Unknown error'));
+    }
   }
 
   private getAxiosConfig() {
@@ -324,7 +365,7 @@ export class GitHubDiffGenerator {
     }
   }
 
-  async generateChangelog(repoUrl: string, startDate: Date, endDate: Date): Promise<string> {
+  async generateChangelog(repoUrl: string, startDate: Date, endDate: Date, shouldPublish: boolean = false): Promise<string> {
     logger.info('Starting changelog generation', {
       repoUrl,
       startDate: startDate.toISOString(),
@@ -382,7 +423,27 @@ Note: This is a preview. Enable an LLM by setting either ENABLE_GREPTILE=true or
           throw new Error('Invalid LLM provider configuration');
       }
 
-      return warningMessage + changelogContent;
+      const finalChangelog = warningMessage + changelogContent;
+
+      // Add this block
+      if (shouldPublish) {
+        try {
+          await this.submitToGramaphone(finalChangelog, {
+            repo: repoUrl,
+            period: {
+              start: startDate.toISOString(),
+              end: endDate.toISOString()
+            }
+          });
+        } catch (error) {
+          logger.warn('Failed to submit to Gramaphone', {
+            error: error instanceof Error ? error.message : 'Unknown error'
+          });
+          // Don't throw the error, just log it - we still want to return the changelog
+        }
+      }
+
+      return finalChangelog;
 
     } catch (error) {
       logger.error('Error in generateChangelog', {

@@ -3,8 +3,21 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Check, Copy, Edit2, Eye, History } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import PublishButton from './PublishButton';
 
-const EditableChangelog = ({ initialContent = '', onSave }) => {
+interface EditableChangelogProps {
+  initialContent?: string;
+  onSave?: (content: string) => void;
+  metadata?: {
+    repo: string;
+    period: {
+      start: string;
+      end: string;
+    }
+  };
+}
+
+const EditableChangelog = ({ initialContent = '', onSave, metadata }: EditableChangelogProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [content, setContent] = useState(initialContent);
   const [copied, setCopied] = useState(false);
@@ -86,7 +99,7 @@ const EditableChangelog = ({ initialContent = '', onSave }) => {
           </div>
         </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-4">
         {content ? (
           <div className="space-y-4">
             {isEditing ? (
@@ -107,9 +120,17 @@ const EditableChangelog = ({ initialContent = '', onSave }) => {
                 </div>
               </div>
             ) : (
-              <div className="prose prose-sm dark:prose-invert max-w-none">
-                <ReactMarkdown>{content}</ReactMarkdown>
-              </div>
+              <>
+                <div className="prose prose-sm dark:prose-invert max-w-none">
+                  <ReactMarkdown>{content}</ReactMarkdown>
+                </div>
+                {metadata && (
+                  <PublishButton 
+                    changelog={content} 
+                    metadata={metadata}
+                  />
+                )}
+              </>
             )}
           </div>
         ) : (

@@ -326,12 +326,19 @@ const ChangelogGenerator = () => {
           </div>
 
           {/* Output Section */}
-          <div>
+            <div>
             <EditableChangelog 
-              initialContent={changelog}
-              onSave={(newContent) => setChangelog(newContent)}
+                initialContent={changelog}
+                onSave={(newContent) => setChangelog(newContent)}
+                metadata={{
+                repo: formData.repoUrl,
+                period: {
+                    start: formData.startDate,
+                    end: formData.endDate
+                }
+                }}
             />
-          </div>
+            </div>
         </div>
       </main>
     </div>
