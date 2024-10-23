@@ -121,7 +121,11 @@ export class GitHubDiffGenerator {
     const url = `${this.gramaphoneUrl}/api/changelogs`;
     logger.info('Submitting to Gramaphone', {
       url,
-      metadataPreview: metadata
+      metadataPreview: {
+        repo: metadata.repo,
+        periodStart: metadata.period.start,
+        periodEnd: metadata.period.end
+      }
     });
   
     try {
