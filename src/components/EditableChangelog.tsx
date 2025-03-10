@@ -28,9 +28,11 @@ const EditableChangelog = ({ initialContent = '', onSave, metadata }: EditableCh
   }, [initialContent]);
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(content);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      await navigator.clipboard.writeText(content);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
   };
 
   const handleSave = () => {
@@ -40,14 +42,16 @@ const EditableChangelog = ({ initialContent = '', onSave, metadata }: EditableCh
 
   // Add local storage to persist edits
   useEffect(() => {
-    const savedContent = localStorage.getItem('changelog-content');
-    if (savedContent && !initialContent) {
-      setContent(savedContent);
+    if (typeof window !== 'undefined') {
+      const savedContent = localStorage.getItem('changelog-content');
+      if (savedContent && !initialContent) {
+        setContent(savedContent);
+      }
     }
   }, []);
 
   useEffect(() => {
-    if (content) {
+    if (typeof window !== 'undefined' && content) {
       localStorage.setItem('changelog-content', content);
     }
   }, [content]);
@@ -124,7 +128,7 @@ const EditableChangelog = ({ initialContent = '', onSave, metadata }: EditableCh
                 <div className="prose prose-sm dark:prose-invert max-w-none">
                   <ReactMarkdown>{content}</ReactMarkdown>
                 </div>
-                {metadata && (
+                {metadata && process.env.NEXT_PUBLIC_SHOULD_PUBLISH === 'true' && (
                   <PublishButton 
                     changelog={content} 
                     metadata={metadata}
