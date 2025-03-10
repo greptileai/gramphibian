@@ -250,7 +250,7 @@ export class GitHubDiffGenerator {
 
     logger.info('Generating changelog with OpenAI');
     const completion = await this.openai.chat.completions.create({
-      model: "gpt-4",
+      model: "gpt-4o",
       messages: [
         {
           role: "system",
@@ -265,7 +265,7 @@ export class GitHubDiffGenerator {
     });
 
     const changelog = completion.choices[0].message.content || 'No changelog generated';
-    return `${changelog}\n\n_Generated with: OpenAI GPT-4_`;
+    return `${changelog}\n`;
   }
 
   private async generateWithGreptile(diffText: string, repoUrl: string): Promise<string> {

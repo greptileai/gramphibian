@@ -3,9 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { 
   AlertCircle, 
-  GitBranch, 
+  GitBranch,
   Calendar, 
-  History, 
   Loader2, 
   Moon,
   Sun
@@ -17,19 +16,33 @@ import { useTheme } from "next-themes";
 import EditableChangelog from '@/components/EditableChangelog';
 import RepoSuggestions from './RepoSuggestions';
 
-const GramphibianLogo = () => (
-  <svg width="40" height="40" viewBox="0 0 120 120" className="inline-block">
-    <circle cx="60" cy="60" r="50" className="fill-primary" />
-    <circle cx="40" cy="45" r="15" fill="white" />
-    <circle cx="80" cy="45" r="15" fill="white" />
-    <circle cx="40" cy="45" r="8" className="fill-background" />
-    <circle cx="80" cy="45" r="8" className="fill-background" />
-    <path d="M40 70 Q60 85 80 70" stroke="white" strokeWidth="4" fill="none" />
-    <circle cx="30" cy="80" r="4" className="fill-primary-foreground" />
-    <circle cx="90" cy="80" r="4" className="fill-primary-foreground" />
-    <circle cx="60" cy="85" r="4" className="fill-primary-foreground" />
-  </svg>
-);
+// Client-side only theme toggle
+const ThemeToggle = () => {
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  // When mounted on client, now we can show the UI
+  useEffect(() => setMounted(true), []);
+
+  if (!mounted) {
+    return <Button variant="ghost" size="icon" disabled><div className="h-5 w-5" /></Button>;
+  }
+
+  return (
+    <Button
+      variant="ghost"
+      size="icon"
+      onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+    >
+      {theme === 'dark' ? (
+        <Sun className="h-5 w-5" />
+      ) : (
+        <Moon className="h-5 w-5" />
+      )}
+    </Button>
+  );
+};
+
 
 // Type for the form data
 interface FormData {
@@ -39,7 +52,7 @@ interface FormData {
 }
 
 const ChangelogGenerator = () => {
-  const { theme, setTheme } = useTheme();
+  // Theme is handled by ThemeToggle component
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [changelog, setChangelog] = useState('');
@@ -52,25 +65,32 @@ const ChangelogGenerator = () => {
 
   // Load saved data on component mount
   useEffect(() => {
-    const savedFormData = localStorage.getItem('changelog-form-data');
-    const savedRecentRepos = localStorage.getItem('changelog-recent-repos');
-    
-    if (savedFormData) {
-      setFormData(JSON.parse(savedFormData));
-    }
-    
-    if (savedRecentRepos) {
-      setRecentRepos(JSON.parse(savedRecentRepos));
+    // Only run on client-side
+    if (typeof window !== 'undefined') {
+      const savedFormData = localStorage.getItem('changelog-form-data');
+      const savedRecentRepos = localStorage.getItem('changelog-recent-repos');
+      
+      if (savedFormData) {
+        setFormData(JSON.parse(savedFormData));
+      }
+      
+      if (savedRecentRepos) {
+        setRecentRepos(JSON.parse(savedRecentRepos));
+      }
     }
   }, []);
 
   // Save form data and recent repos when they change
   useEffect(() => {
-    localStorage.setItem('changelog-form-data', JSON.stringify(formData));
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('changelog-form-data', JSON.stringify(formData));
+    }
   }, [formData]);
 
   useEffect(() => {
-    localStorage.setItem('changelog-recent-repos', JSON.stringify(recentRepos));
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('changelog-recent-repos', JSON.stringify(recentRepos));
+    }
   }, [recentRepos]);
 
   // Generate a unique key for caching based on form data
@@ -106,8 +126,10 @@ const ChangelogGenerator = () => {
       const data = await response.json();
       
       // Cache the result
-      const cacheKey = getCacheKey(formData);
-      localStorage.setItem(cacheKey, data.changelog);
+      if (typeof window !== 'undefined') {
+        const cacheKey = getCacheKey(formData);
+        localStorage.setItem(cacheKey, data.changelog);
+      }
       
       setChangelog(data.changelog);
       
@@ -131,13 +153,15 @@ const ChangelogGenerator = () => {
     });
     setChangelog('');
     setRecentRepos([]);
-    localStorage.removeItem('changelog-form-data');
-    localStorage.removeItem('changelog-recent-repos');
-    // Clear all changelog caches
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key && key.startsWith('changelog-')) {
-        localStorage.removeItem(key);
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('changelog-form-data');
+      localStorage.removeItem('changelog-recent-repos');
+      // Clear all changelog caches
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('changelog-')) {
+          localStorage.removeItem(key);
+        }
       }
     }
   };
@@ -155,37 +179,10 @@ const ChangelogGenerator = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="py-4 flex items-center justify-between">
             <div className="flex items-center space-x-2">
-              <GramphibianLogo />
-              <h1 className="text-2xl font-bold">Gramphibian</h1>
+              <h1 className="text-2xl font-bold">What did you get done this week?</h1>
             </div>
             <div className="flex items-center space-x-4">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleClearData}
-                title="Clear all saved data"
-              >
-                <History className="h-5 w-5" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-              >
-                {theme === 'dark' ? (
-                  <Sun className="h-5 w-5" />
-                ) : (
-                  <Moon className="h-5 w-5" />
-                )}
-              </Button>
-              <a
-                href="https://github.com/AbhinavHampiholi/gramphibian"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-muted-foreground hover:text-foreground"
-              >
-                <GitBranch className="h-6 w-6" />
-              </a>
+              <ThemeToggle />
             </div>
           </div>
         </div>
