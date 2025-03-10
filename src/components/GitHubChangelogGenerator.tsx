@@ -144,27 +144,27 @@ const ChangelogGenerator = () => {
     }
   };
 
-  // Clear all saved data
-  const handleClearData = () => {
-    setFormData({
-      repoUrl: '',
-      startDate: '',
-      endDate: ''
-    });
-    setChangelog('');
-    setRecentRepos([]);
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('changelog-form-data');
-      localStorage.removeItem('changelog-recent-repos');
-      // Clear all changelog caches
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key && key.startsWith('changelog-')) {
-          localStorage.removeItem(key);
-        }
-      }
-    }
-  };
+  // // Clear all saved data - not used
+  // const handleClearData = () => {
+  //   setFormData({
+  //     repoUrl: '',
+  //     startDate: '',
+  //     endDate: ''
+  //   });
+  //   setChangelog('');
+  //   setRecentRepos([]);
+  //   if (typeof window !== 'undefined') {
+  //     localStorage.removeItem('changelog-form-data');
+  //     localStorage.removeItem('changelog-recent-repos');
+  //     // Clear all changelog caches
+  //     for (let i = 0; i < localStorage.length; i++) {
+  //       const key = localStorage.key(i);
+  //       if (key && key.startsWith('changelog-')) {
+  //         localStorage.removeItem(key);
+  //       }
+  //     }
+  //   }
+  // };
 
 //   const handleCopy = async () => {
 //     await navigator.clipboard.writeText(changelog);
