@@ -254,11 +254,11 @@ export class GitHubDiffGenerator {
       messages: [
         {
           role: "system",
-          content: "Create a concise email update summarizing weekly development changes. Start with 'Dear EM', followed by a list of key achievements (each under 10 words), and sign-off. Focus only on key accomplishments."
+          content: "You are a developer writing a quick email response to your manager's question 'What did you get done this week?' Be concise and natural. Format as a brief email with a greeting, 3-5 key points, and a sign-off."
         },
         {
           role: "user",
-          content: `List the key achievements from these git changes in a brief email format:\n\n${diffText}`
+          content: `Based on these git changes, write a quick update email about what was accomplished:\n\n${diffText}`
         }
       ],
       temperature: 0.7,
@@ -286,7 +286,7 @@ export class GitHubDiffGenerator {
         },
         body: JSON.stringify({
           messages: [{
-            content: `List the key achievements from these git changes. Each point must be under 10 words. Use simple formatting:\n\n${diffText}`,
+            content: `Write a quick email response to 'What did you get done this week?' based on these git changes. Include a greeting, 3-5 key points, and a sign-off:\n\n${diffText}`,
             role: "user"
           }],
           repositories: [{

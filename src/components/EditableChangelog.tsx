@@ -42,9 +42,10 @@ const EditableChangelog = ({ initialContent = '', onSave, metadata }: EditableCh
 
   // Function to clean up content by removing dashes and numbers at line starts
   const cleanContent = (text: string) => {
+    // Only clean if the line starts with a dash or number
     return text
       .split('\n')
-      .map(line => line.replace(/^[-\d.#\s]+/, '').trim())
+      .map(line => line.startsWith('-') || /^\d/.test(line) ? line.replace(/^[-\d.#\s]+/, '').trim() : line)
       .join('\n');
   };
 
@@ -64,11 +65,11 @@ const EditableChangelog = ({ initialContent = '', onSave, metadata }: EditableCh
     }
   }, [content]);
 
-  // Add function to parse and format email parts
+  // Simplify the email formatting function
   const formatEmailContent = (text: string) => {
     return {
       subject: "Re: What did you get done this week?",
-      body: text
+      body: text.trim() // Just trim the text, don't modify it further
     };
   };
 
@@ -178,11 +179,13 @@ Best Regards,
                   {/* Email body */}
                   <div className="whitespace-pre-wrap">
                     <ReactMarkdown components={{
-                      p: ({ children }) => <p className="mb-4">{children}</p>,
-                      h1: ({ children }) => <h1 className="text-xl font-bold mb-4">{children}</h1>,
-                      h2: ({ children }) => <h2 className="text-lg font-semibold mb-3">{children}</h2>
+                      // p: ({ children }) => <p className="mb-4">{children}</p>,
+                      // h1: ({ children }) => <h1 className="text-xl font-bold mb-4">{children}</h1>,
+                      // h2: ({ children }) => <h2 className="text-lg font-semibold mb-3">{children}</h2>,
+                      // ul: ({ children }) => <ul className="list-disc pl-4 mb-4">{children}</ul>,
+                      // li: ({ children }) => <li className="mb-2">{children}</li>
                     }}>
-                      {cleanContent(formatEmailContent(content).body)}
+                      {content}
                     </ReactMarkdown>
                   </div>
                 </div>
@@ -200,8 +203,7 @@ Best Regards,
         ) : (
           <div className="text-center text-muted-foreground py-12 bg-background">
             <History className="h-12 w-12 mx-auto mb-4" />
-            <p>New Changelog</p>
-            <p className="text-sm mt-2">Write a summary of your development changes and accomplishments</p>
+            <p>What did you get done this week?</p>
           </div>
         )}
       </CardContent>
