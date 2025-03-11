@@ -40,6 +40,14 @@ const EditableChangelog = ({ initialContent = '', onSave, metadata }: EditableCh
     setIsEditing(false);
   };
 
+  // Function to clean up content by removing dashes and numbers at line starts
+  const cleanContent = (text: string) => {
+    return text
+      .split('\n')
+      .map(line => line.replace(/^[-\d.#\s]+/, '').trim())
+      .join('\n');
+  };
+
   // Add local storage to persist edits
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -56,17 +64,29 @@ const EditableChangelog = ({ initialContent = '', onSave, metadata }: EditableCh
     }
   }, [content]);
 
+  // Add function to parse and format email parts
+  const formatEmailContent = (text: string) => {
+    return {
+      subject: "Re: What did you get done this week?",
+      body: text
+    };
+  };
+
   return (
-    <Card className="h-full">
-      <CardHeader>
-        <CardTitle className="flex justify-between items-center">
-          Generated Changelog
+    <Card className="h-full bg-background">
+      <CardHeader className="border-b">
+        <CardTitle className="flex justify-between items-center text-base font-medium">
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-red-500"></div>
+            <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+            <div className="w-3 h-3 rounded-full bg-green-500"></div>
+          </div>
           <div className="flex gap-2">
             {content && (
               <>
                 <Button
                   size="sm"
-                  variant="outline"
+                  variant="ghost"
                   onClick={() => setIsEditing(!isEditing)}
                 >
                   {isEditing ? (
@@ -83,7 +103,7 @@ const EditableChangelog = ({ initialContent = '', onSave, metadata }: EditableCh
                 </Button>
                 <Button
                   size="sm"
-                  variant="outline"
+                  variant="ghost"
                   onClick={handleCopy}
                 >
                   {copied ? (
@@ -103,15 +123,31 @@ const EditableChangelog = ({ initialContent = '', onSave, metadata }: EditableCh
           </div>
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="p-0">
         {content ? (
-          <div className="space-y-4">
+          <div>
             {isEditing ? (
-              <div className="space-y-4">
+              <div className="space-y-4 p-4">
                 <textarea
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
-                  className="w-full h-[400px] p-4 font-mono text-sm bg-background border rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full h-[400px] p-4 font-mono text-sm bg-background border-0 rounded-none resize-none focus:outline-none focus:ring-0"
+                  placeholder="Subject: Weekly Development Changes Update
+
+Dear Team,
+
+I hope this email finds you well. Here is a brief summary of our key accomplishments this week:
+
+We implemented a new login feature to enhance user authentication. The payment system received important bug fixes to improve reliability. Our website performance was optimized, resulting in faster loading speeds.
+
+We also upgraded our database security measures and revamped the user interface for better usability. The mobile app responsiveness has been enhanced to provide a smoother experience across devices.
+
+Additional improvements include updates to our privacy policy, new product category implementations, and streamlined customer support processes. We've also integrated an AI chatbot to assist users more effectively.
+
+Keep up the good work!
+
+Best Regards,
+[Your Name]"
                 />
                 <div className="flex justify-end gap-2">
                   <Button 
@@ -125,23 +161,47 @@ const EditableChangelog = ({ initialContent = '', onSave, metadata }: EditableCh
               </div>
             ) : (
               <>
-                <div className="prose prose-sm dark:prose-invert max-w-none">
-                  <ReactMarkdown>{content}</ReactMarkdown>
+                <div className="prose prose-sm dark:prose-invert max-w-none p-6 email-content bg-background">
+                  {/* Email header section */}
+                  <div className="border-b mb-4 pb-4">
+                    <div className="mb-2">
+                      <span className="text-muted-foreground">To: </span>
+                      <span>elon@doge.gov</span>
+                    </div>
+                    {formatEmailContent(content).subject && (
+                      <div>
+                        <span className="text-muted-foreground">Subject: </span>
+                        <span className="font-medium">{formatEmailContent(content).subject}</span>
+                      </div>
+                    )}
+                  </div>
+                  {/* Email body */}
+                  <div className="whitespace-pre-wrap">
+                    <ReactMarkdown components={{
+                      p: ({ children }) => <p className="mb-4">{children}</p>,
+                      h1: ({ children }) => <h1 className="text-xl font-bold mb-4">{children}</h1>,
+                      h2: ({ children }) => <h2 className="text-lg font-semibold mb-3">{children}</h2>
+                    }}>
+                      {cleanContent(formatEmailContent(content).body)}
+                    </ReactMarkdown>
+                  </div>
                 </div>
                 {metadata && process.env.NEXT_PUBLIC_SHOULD_PUBLISH === 'true' && (
-                  <PublishButton 
-                    changelog={content} 
-                    metadata={metadata}
-                  />
+                  <div className="border-t p-4">
+                    <PublishButton 
+                      changelog={content} 
+                      metadata={metadata}
+                    />
+                  </div>
                 )}
               </>
             )}
           </div>
         ) : (
-          <div className="text-center text-muted-foreground py-12">
+          <div className="text-center text-muted-foreground py-12 bg-background">
             <History className="h-12 w-12 mx-auto mb-4" />
-            <p>Your generated changelog will appear here</p>
-            <p className="text-sm mt-2">Generated in Markdown format</p>
+            <p>New Changelog</p>
+            <p className="text-sm mt-2">Write a summary of your development changes and accomplishments</p>
           </div>
         )}
       </CardContent>

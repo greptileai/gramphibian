@@ -250,22 +250,22 @@ export class GitHubDiffGenerator {
 
     logger.info('Generating changelog with OpenAI');
     const completion = await this.openai.chat.completions.create({
-      model: "gpt-4o",
+      model: "gpt-4",
       messages: [
         {
           role: "system",
-          content: "You are a skilled developer writing clear and concise changelogs. Focus on user-facing changes and organize them into Features, Improvements, and Bug Fixes categories."
+          content: "Create a concise email update summarizing weekly development changes. Start with 'Dear EM', followed by a list of key achievements (each under 10 words), and sign-off. Focus only on key accomplishments."
         },
         {
           role: "user",
-          content: `Generate a clear and concise changelog from these git diffs. Include links to PRs and contributers where you can. Focus on the impact and meaning of changes, not the technical details:\n\n${diffText}`
+          content: `List the key achievements from these git changes in a brief email format:\n\n${diffText}`
         }
       ],
       temperature: 0.7,
     });
 
     const changelog = completion.choices[0].message.content || 'No changelog generated';
-    return `${changelog}\n`;
+    return changelog;
   }
 
   private async generateWithGreptile(diffText: string, repoUrl: string): Promise<string> {
@@ -286,7 +286,7 @@ export class GitHubDiffGenerator {
         },
         body: JSON.stringify({
           messages: [{
-            content: `Generate a clear and concise changelog from these git diffs. Include links to PRs and contributers where you can. Focus on user-facing changes and organize them into Features, Improvements, and Bug Fixes categories. Do not output a numbered list. Bullet points are preferred. Here are the diffs:${diffText}`,
+            content: `List the key achievements from these git changes. Each point must be under 10 words. Use simple formatting:\n\n${diffText}`,
             role: "user"
           }],
           repositories: [{
@@ -313,8 +313,7 @@ export class GitHubDiffGenerator {
         sourcesCount: data.sources?.length || 0
       });
 
-      return `${data.message}\n\n_Generated with: Greptile_`;
-
+      return data.message;
     } catch (error) {
       logger.error('Greptile API error', {
         error: error instanceof Error ? error.message : 'Unknown error',
@@ -404,11 +403,7 @@ export class GitHubDiffGenerator {
 
       let warningMessage = '';
       if (diff.hasMore) {
-        warningMessage = `
-⚠️ Note: This changelog only includes the first ${MAX_TOTAL_COMMITS} commits due to GitHub API limitations. 
-The actual number of changes during this period may be larger.
-
-`;
+        warningMessage = `Note: This update only includes the first ${MAX_TOTAL_COMMITS} commits due to API limitations. There may be additional changes.\n\n`;
       }
 
       // Determine which LLM to use and generate changelog

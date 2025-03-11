@@ -66,17 +66,22 @@ const popularRepos = [
   // test-greptile-query.ts
 
 async function testGreptileChangelog() {
-    const greptileApiKey = process.env.GREPTILE_API_KEY || 'your-greptile-api-key';
-    const githubToken = process.env.GITHUB_PAT || 'your-github-token';
+    const greptileApiKey = process.env.GREPTILE_API_KEY;
+    const githubToken = process.env.GITHUB_PAT;
+    
+    // Ensure tokens are set
+    if (!greptileApiKey || !githubToken) {
+      throw new Error('API keys not set');
+    }
     
     // Test with one of our indexed repos
     const repoUrl = 'facebook/react';
     
-    // Sample diff text (you would get this from your actual diffs)
+    // Sample diff text - consider loading from actual Git diffs
     const diffText = `
     Commit: b4cbdc5 - 2024-10-22 23:49:10
     Message: remove terser from react-compiler-runtime build (#31326)
-    📋 Summary
+    Summary
     This fixes a minor nit I have about the react-compiler-runtime package
     in that the published code is minified. I assume most consumers will
     minify their own bundles so there's no rea
@@ -84,12 +89,12 @@ async function testGreptileChangelog() {
     Commit: 9daabc0 - 2024-10-22 20:07:10
     Message: react-hooks/rules-of-hooks: Add support for do/while loops (#28714)
     `;
-  
+
     try {
       console.log('Testing Greptile changelog generation...');
       console.log('Repository:', repoUrl);
       console.log('Sample diff length:', diffText.length);
-  
+
       const response = await fetch("https://api.greptile.com/v2/query", {
         method: "POST",
         headers: {
@@ -100,11 +105,11 @@ async function testGreptileChangelog() {
         body: JSON.stringify({
           messages: [{
             content: `You are a changelog generator. Analyze these Git diffs and generate a clear, concise changelog entry. Focus on the impact and meaning of changes:
-  
-  Diffs to analyze:
-  ${diffText}
-  
-  Format the changelog with appropriate sections (Features, Improvements, Bug Fixes) and use bullet points.`,
+
+Diffs to analyze:
+${diffText}
+
+Format the changelog with appropriate sections (Features, Improvements, Bug Fixes) and use bullet points.`,
             role: "user"
           }],
           repositories: [{

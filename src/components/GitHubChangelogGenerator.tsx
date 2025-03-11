@@ -10,7 +10,7 @@ import {
   Sun
 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from "@/components/ui/button";
 import { useTheme } from "next-themes";
 import EditableChangelog from '@/components/EditableChangelog';
@@ -25,7 +25,11 @@ const ThemeToggle = () => {
   useEffect(() => setMounted(true), []);
 
   if (!mounted) {
-    return <Button variant="ghost" size="icon" disabled><div className="h-5 w-5" /></Button>;
+    return (
+      <Button variant="ghost" size="icon" disabled>
+        <div className="h-5 w-5" />
+      </Button>
+    );
   }
 
   return (
@@ -34,11 +38,7 @@ const ThemeToggle = () => {
       size="icon"
       onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
     >
-      {theme === 'dark' ? (
-        <Sun className="h-5 w-5" />
-      ) : (
-        <Moon className="h-5 w-5" />
-      )}
+      {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
     </Button>
   );
 };
@@ -52,6 +52,10 @@ interface FormData {
 }
 
 const ChangelogGenerator = () => {
+  // Get default dates
+  const defaultEndDate = new Date().toISOString().split('T')[0];
+  const defaultStartDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
   // Theme is handled by ThemeToggle component
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -59,8 +63,8 @@ const ChangelogGenerator = () => {
   const [recentRepos, setRecentRepos] = useState<string[]>([]);
   const [formData, setFormData] = useState<FormData>({
     repoUrl: '',
-    startDate: '',
-    endDate: ''
+    startDate: defaultStartDate,
+    endDate: defaultEndDate
   });
 
   // Load saved data on component mount
@@ -177,9 +181,14 @@ const ChangelogGenerator = () => {
       {/* Header */}
       <div className="border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="py-4 flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <h1 className="text-2xl font-bold">What did you get done this week?</h1>
+          <div className="py-10 md:py-14 flex items-center justify-between">
+            <div className="flex flex-col space-y-4">
+              <h1 className="text-4xl md:text-5xl font-extrabold">
+                What did you get done this week?
+              </h1>
+              <p className="text-lg text-muted-foreground">
+                AI email generator for when someone asks you what you did this week.
+              </p>
             </div>
             <div className="flex items-center space-x-4">
               <ThemeToggle />
@@ -193,10 +202,7 @@ const ChangelogGenerator = () => {
           {/* Input Section */}
           <div>
             <Card>
-              <CardHeader>
-                <CardTitle>Generate Changelog</CardTitle>
-              </CardHeader>
-              <CardContent>
+              <CardContent className="p-6">
                 <form onSubmit={handleSubmit} className="space-y-4">
                   {/* Repository Input */}
                   <div>
@@ -293,7 +299,7 @@ const ChangelogGenerator = () => {
 
                   <Button 
                     type="submit" 
-                    className="w-full"
+                    className="w-full dark:text-white bg-green-500"
                     disabled={loading}
                   >
                     {loading ? (
@@ -302,7 +308,7 @@ const ChangelogGenerator = () => {
                         Generating...
                       </>
                     ) : (
-                      'Generate Changelog'
+                      'Generate Email'
                     )}
                   </Button>
                 </form>
@@ -319,19 +325,19 @@ const ChangelogGenerator = () => {
           </div>
 
           {/* Output Section */}
-            <div>
+          <div>
             <EditableChangelog 
-                initialContent={changelog}
-                onSave={(newContent) => setChangelog(newContent)}
-                metadata={{
+              initialContent={changelog}
+              onSave={(newContent) => setChangelog(newContent)}
+              metadata={{
                 repo: formData.repoUrl,
                 period: {
-                    start: formData.startDate,
-                    end: formData.endDate
+                  start: formData.startDate,
+                  end: formData.endDate
                 }
-                }}
+              }}
             />
-            </div>
+          </div>
         </div>
       </main>
     </div>

@@ -7,48 +7,48 @@ function formatToMarkdown(content: string): string {
     
     // Define section icons
     const sectionIcons: Record<string, string> = {
-      'Breaking Changes': '⚠️',
-      'Features': '✨',
-      'Improvements': '🚀',
-      'Bug Fixes': '🐛',
-      'Security': '🔒',
-      'Performance': '⚡',
-      'Documentation': '📚',
-      'Dependencies': '📦',
-      'Refactor': '♻️',
-      'Tests': '🧪',
-      'Other': '📋'
+      'Breaking Changes': '',
+      'Features': '',
+      'Improvements': '',
+      'Bug Fixes': '',
+      'Security': '',
+      'Performance': '',
+      'Documentation': '',
+      'Dependencies': '',
+      'Refactor': '',
+      'Tests': '',
+      'Other': ''
     };
   
     // Define subsection icons for items starting with #
     const subsectionIcons: Record<string, string> = {
-      'breaking': '⚠️',
-      'feature': '✨',
-      'feat': '✨',
-      'improve': '🚀',
-      'enhancement': '🚀',
-      'fix': '🐛',
-      'bug': '🐛',
-      'security': '🔒',
-      'perf': '⚡',
-      'performance': '⚡',
-      'doc': '📚',
-      'docs': '📚',
-      'dep': '📦',
-      'deps': '📦',
-      'dependencies': '📦',
-      'refactor': '♻️',
-      'test': '🧪',
-      'tests': '🧪',
-      'ci': '🔄',
-      'build': '🛠️',
-      'chore': '🧹',
-      'style': '💅',
-      'i18n': '🌐',
-      'a11y': '♿',
-      'accessibility': '♿',
-      'ui': '🎨',
-      'ux': '🎯'
+      'breaking': '',
+      'feature': '',
+      'feat': '',
+      'improve': '',
+      'enhancement': '',
+      'fix': '',
+      'bug': '',
+      'security': '',
+      'perf': '',
+      'performance': '',
+      'doc': '',
+      'docs': '',
+      'dep': '',
+      'deps': '',
+      'dependencies': '',
+      'refactor': '',
+      'test': '',
+      'tests': '',
+      'ci': '',
+      'build': '',
+      'chore': '',
+      'style': '',
+      'i18n': '',
+      'a11y': '',
+      'accessibility': '',
+      'ui': '',
+      'ux': ''
     };
     
     // Split content into sections
@@ -61,7 +61,7 @@ function formatToMarkdown(content: string): string {
         const cleanTitle = title.trim();
         
         // Find matching icon for section
-        let icon = '📋'; // Default icon
+        let icon = ''; // Default icon (removed emoji)
         for (const [keyTitle, keyIcon] of Object.entries(sectionIcons)) {
           if (cleanTitle.includes(keyTitle)) {
             icon = keyIcon;
@@ -83,7 +83,7 @@ function formatToMarkdown(content: string): string {
               const cleanItem = trimmedItem.replace(/^#+\s*/, '');
               
               // Find matching icon for subsection
-              let subsectionIcon = '📋'; // Default icon
+              let subsectionIcon = ''; // Default icon (removed emoji)
               for (const [key, keyIcon] of Object.entries(subsectionIcons)) {
                 if (cleanItem.toLowerCase().includes(key)) {
                   subsectionIcon = keyIcon;
