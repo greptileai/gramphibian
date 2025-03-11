@@ -70,7 +70,7 @@ function formatToMarkdown(content: string): string {
         }
         
         // Add section header with icon
-        markdown += `## ${icon} ${cleanTitle}\n`;
+        markdown += `${icon} ${cleanTitle}\n`;
         
         // Add items with proper Markdown list formatting
         items.forEach(item => {
@@ -92,11 +92,11 @@ function formatToMarkdown(content: string): string {
               }
               
               // Add as a subsection with icon
-              markdown += `### ${subsectionIcon} ${cleanItem}\n`;
+              markdown += `${subsectionIcon} ${cleanItem}\n`;
             } else {
               // Handle normal list item
               const cleanItem = trimmedItem.replace(/^[•\-\*]\s*/, '');
-              markdown += `- ${cleanItem}\n`;
+              markdown += `${cleanItem}\n`;
             }
           }
         });

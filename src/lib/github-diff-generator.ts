@@ -254,7 +254,7 @@ export class GitHubDiffGenerator {
       messages: [
         {
           role: "system",
-          content: "You are a developer writing a quick email response to your manager's question 'What did you get done this week?' Be concise and natural. Format as a brief email with a greeting, 3-5 key points, and a sign-off."
+          content: "You are a developer writing a quick email response to your manager's question 'What did you get done this week?' Be concise and natural. Format as a brief email with a greeting to 'Boss', 3-5 key points, and a sign-off. Do not write a subject line. Do not use markdown headings."
         },
         {
           role: "user",

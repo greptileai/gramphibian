@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Check, Copy, Edit2, Eye, History } from 'lucide-react';
-import ReactMarkdown from 'react-markdown';
 import PublishButton from './PublishButton';
 
 interface EditableChangelogProps {
@@ -40,15 +39,6 @@ const EditableChangelog = ({ initialContent = '', onSave, metadata }: EditableCh
     setIsEditing(false);
   };
 
-  // Function to clean up content by removing dashes and numbers at line starts
-  const cleanContent = (text: string) => {
-    // Only clean if the line starts with a dash or number
-    return text
-      .split('\n')
-      .map(line => line.startsWith('-') || /^\d/.test(line) ? line.replace(/^[-\d.#\s]+/, '').trim() : line)
-      .join('\n');
-  };
-
   // Add local storage to persist edits
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -57,7 +47,7 @@ const EditableChangelog = ({ initialContent = '', onSave, metadata }: EditableCh
         setContent(savedContent);
       }
     }
-  }, []);
+  }, [initialContent]);
 
   useEffect(() => {
     if (typeof window !== 'undefined' && content) {
@@ -178,15 +168,15 @@ Best Regards,
                   </div>
                   {/* Email body */}
                   <div className="whitespace-pre-wrap">
-                    <ReactMarkdown components={{
-                      // p: ({ children }) => <p className="mb-4">{children}</p>,
-                      // h1: ({ children }) => <h1 className="text-xl font-bold mb-4">{children}</h1>,
-                      // h2: ({ children }) => <h2 className="text-lg font-semibold mb-3">{children}</h2>,
-                      // ul: ({ children }) => <ul className="list-disc pl-4 mb-4">{children}</ul>,
-                      // li: ({ children }) => <li className="mb-2">{children}</li>
-                    }}>
-                      {content}
-                    </ReactMarkdown>
+                    {/* <ReactMarkdown components={{
+                      p: ({ children }) => <p className="mb-4">{children}</p>,
+                      h1: ({ children }) => <h1 className="text-xl font-bold mb-4">{children}</h1>,
+                      h2: ({ children }) => <h2 className="text-lg font-semibold mb-3">{children}</h2>,
+                      ul: ({ children }) => <ul className="list-disc pl-4 mb-4">{children}</ul>,
+                      li: ({ children }) => <li className="mb-2">{children}</li>
+                    }}> */}
+                    {content}
+                    {/* </ReactMarkdown> */}
                   </div>
                 </div>
                 {metadata && process.env.NEXT_PUBLIC_SHOULD_PUBLISH === 'true' && (
